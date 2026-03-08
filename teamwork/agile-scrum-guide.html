@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agile / Scrum — Hướng dẫn toàn diện</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f13;
+    --surface: #16181f;
+    --surface2: #1e2029;
+    --border: #2a2d3a;
+    --accent: #5b8fff;
+    --accent2: #ff6b6b;
+    --accent3: #51e0a0;
+    --accent4: #ffd166;
+    --text: #e8eaf0;
+    --muted: #7a7f9a;
+    --mono: 'JetBrains Mono', monospace;
+    --serif: 'Fraunces', serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* HEADER */
+  header {
+    padding: 80px 60px 60px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(91,143,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: 100px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(81,224,160,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  header h1 {
+    font-family: var(--serif);
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  header h1 span {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  header p {
+    margin-top: 20px;
+    color: var(--muted);
+    max-width: 600px;
+    font-size: 13px;
+  }
+
+  /* NAV */
+  nav {
+    padding: 20px 60px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 6px 12px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  nav a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* LAYOUT */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 60px;
+  }
+
+  section {
+    margin-bottom: 80px;
+    scroll-margin-top: 80px;
+  }
+
+  /* SECTION HEADERS */
+  .section-num {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 32px 0 16px;
+  }
+
+  h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent4);
+    margin: 24px 0 12px;
+  }
+
+  p {
+    color: var(--muted);
+    margin-bottom: 16px;
+    line-height: 1.8;
+  }
+
+  /* CODE BLOCKS */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 16px 0;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  pre.green { border-left-color: var(--accent3); }
+  pre.yellow { border-left-color: var(--accent4); }
+  pre.red { border-left-color: var(--accent2); }
+
+  /* CARDS */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--accent); }
+
+  .card-icon {
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  .card h4 {
+    margin: 0 0 8px;
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .card p {
+    font-size: 12px;
+    margin: 0;
+  }
+
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 12px;
+  }
+
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    padding: 12px 16px;
+    text-align: left;
+    letter-spacing: 1px;
+    font-size: 11px;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+  }
+
+  td {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    vertical-align: top;
+  }
+
+  tr:hover td { background: var(--surface); }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .badge-blue { background: rgba(91,143,255,0.15); color: var(--accent); }
+  .badge-green { background: rgba(81,224,160,0.15); color: var(--accent3); }
+  .badge-red { background: rgba(255,107,107,0.15); color: var(--accent2); }
+  .badge-yellow { background: rgba(255,209,102,0.15); color: var(--accent4); }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  /* HIGHLIGHT BOX */
+  .highlight {
+    background: linear-gradient(135deg, rgba(91,143,255,0.08), rgba(81,224,160,0.05));
+    border: 1px solid rgba(91,143,255,0.2);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+  }
+
+  .highlight p { color: var(--text); margin: 0; }
+
+  /* TIMELINE */
+  .timeline {
+    position: relative;
+    padding-left: 32px;
+    margin: 16px 0;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -28px;
+    top: 6px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+
+  .timeline-item h4 {
+    margin: 0 0 6px;
+    color: var(--text);
+  }
+
+  .timeline-item p {
+    margin: 0;
+    font-size: 12px;
+  }
+
+  /* TWO COL */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  @media (max-width: 700px) {
+    header { padding: 40px 24px; }
+    header h1 { font-size: 36px; }
+    nav { padding: 16px 24px; }
+    main { padding: 40px 24px; }
+    .two-col { grid-template-columns: 1fr; }
+    .card-grid { grid-template-columns: 1fr; }
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 60px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  /* INLINE CODE */
+  code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--accent3);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  section {
+    animation: fadeIn 0.5s ease both;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-label">Tài liệu tham khảo</div>
+  <h1>Agile & <span>Scrum</span><br>Hướng dẫn toàn diện</h1>
+  <p>Tổng hợp đầy đủ quy trình, ceremonies, roles, và các khái niệm cốt lõi trong Agile/Scrum — dành cho developer đang đi làm.</p>
+</header>
+
+<nav>
+  <a href="#tong-quan">Tổng quan</a>
+  <a href="#roles">Roles</a>
+  <a href="#ceremonies">Ceremonies</a>
+  <a href="#backlog">Backlog</a>
+  <a href="#story-point">Story Point</a>
+  <a href="#velocity">Velocity</a>
+  <a href="#user-story">User Story</a>
+  <a href="#dod">Definition of Done</a>
+  <a href="#blocker">Blockers</a>
+  <a href="#kanban">Kanban Board</a>
+  <a href="#scrum-vs-kanban">Scrum vs Kanban</a>
+  <a href="#agile-vs-waterfall">Agile vs Waterfall</a>
+  <a href="#kaizen">Kaizen</a>
+</nav>
+
+<main>
+
+  <!-- TỔNG QUAN -->
+  <section id="tong-quan">
+    <div class="section-num">01 — Tổng quan</div>
+    <h2>Sprint là gì?</h2>
+    <p>Sprint là khung thời gian làm việc (1–2 tuần), lặp đi lặp lại liên tục. Các meeting diễn ra <em>bên trong</em> sprint.</p>
+    <pre>
+SPRINT (1–2 tuần)
+┌─────────────────────────────────────────────┐
+│  Ngày 1:    Sprint Planning                 │
+│                                             │
+│  Ngày 2:    Daily Standup                   │
+│  Ngày 3:    Daily Standup                   │
+│  Ngày 4:    Daily Standup                   │
+│  Ngày 5:    Daily Standup + Grooming        │
+│  ...                                        │
+│  Ngày cuối: Sprint Review + Retrospective   │
+└─────────────────────────────────────────────┘
+          ↓
+    SPRINT mới bắt đầu</pre>
+
+    <div class="highlight">
+      <p>Sprint = khoảng thời gian làm việc. Ceremony = những buổi họp xảy ra trong suốt sprint đó.</p>
+    </div>
+  </section>
+
+  <!-- ROLES -->
+  <section id="roles">
+    <div class="section-num">02 — Thành viên</div>
+    <h2>Scrum Team</h2>
+    <p>Scrum Team gồm đúng 3 thành phần. Stakeholder, khách hàng, manager <strong>không</strong> thuộc Scrum Team.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🎯</div>
+        <h4>Product Owner (PO)</h4>
+        <p>Đại diện khách hàng / business. Quản lý Product Backlog. Quyết định task nào làm trước, task nào làm sau.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🛡️</div>
+        <h4>Scrum Master</h4>
+        <p>Giữ quy trình Scrum chạy đúng. Remove blockers cho team. Không phải sếp, không assign task — chỉ hỗ trợ team.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚙️</div>
+        <h4>Development Team</h4>
+        <p>Người trực tiếp làm ra sản phẩm: dev, tester, designer... Tự tổ chức công việc, không cần ai chỉ đạo từng bước.</p>
+      </div>
+    </div>
+
+    <table>
+      <tr><th>Scrum Team</th><th>Người ngoài</th></tr>
+      <tr><td>Product Owner</td><td>Stakeholder</td></tr>
+      <tr><td>Scrum Master</td><td>Manager / Sếp</td></tr>
+      <tr><td>Development Team</td><td>Khách hàng</td></tr>
+    </table>
+  </section>
+
+  <!-- CEREMONIES -->
+  <section id="ceremonies">
+    <div class="section-num">03 — Ceremonies</div>
+    <h2>Các buổi họp trong Scrum</h2>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <h4>1. Sprint Planning — Đầu sprint</h4>
+        <p>PO giới thiệu task từ backlog. Team estimate bằng Story Point. Team chọn task vào Sprint Backlog và cam kết hoàn thành.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>2. Daily Standup — Mỗi ngày ~15 phút</h4>
+        <p>3 câu hỏi: Hôm qua làm gì? Gặp vấn đề gì? Hôm nay dự định làm gì?</p>
+      </div>
+      <div class="timeline-item">
+        <h4>3. Grooming / Refinement — Giữa sprint</h4>
+        <p>Làm rõ requirement, estimate, chia nhỏ task cho sprint tiếp theo. Chuẩn bị để Sprint Planning diễn ra nhanh và mượt.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>4. Sprint Review — Cuối sprint</h4>
+        <p>Demo sản phẩm cho stakeholder, khách hàng. Thu thập feedback về sản phẩm.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>5. Retrospective — Ngay sau Review</h4>
+        <p>Chỉ Scrum Team. Cái gì tốt? Cái gì chưa tốt? Sprint sau cải thiện gì?</p>
+      </div>
+    </div>
+
+    <h3>Ai tham gia buổi nào?</h3>
+    <table>
+      <tr><th>Ceremony</th><th>Dev Team</th><th>PO</th><th>Scrum Master</th><th>Stakeholder</th></tr>
+      <tr><td>Sprint Planning</td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-red">❌</span></td></tr>
+      <tr><td>Daily Standup</td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-yellow">⚠️</span></td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-red">❌</span></td></tr>
+      <tr><td>Grooming</td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-yellow">⚠️ Nếu cần</span></td></tr>
+      <tr><td>Sprint Review</td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-green">✅</span></td></tr>
+      <tr><td>Retrospective</td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-green">✅</span></td><td><span class="badge badge-red">❌ Không được vào</span></td></tr>
+    </table>
+
+    <div class="highlight">
+      <p>Retro là "safe space" của team — stakeholder và sếp không được tham dự để team thoải mái nói thật.</p>
+    </div>
+  </section>
+
+  <!-- BACKLOG -->
+  <section id="backlog">
+    <div class="section-num">04 — Backlog</div>
+    <h2>Product Backlog & Sprint Backlog</h2>
+
+    <div class="two-col">
+      <div class="card">
+        <h4>📦 Product Backlog</h4>
+        <p>Toàn bộ tính năng, yêu cầu của <em>cả dự án</em>. Do PO quản lý. Sắp xếp theo độ ưu tiên.</p>
+      </div>
+      <div class="card">
+        <h4>🏃 Sprint Backlog</h4>
+        <p>Task được chọn để làm trong sprint này. Lấy từ Product Backlog trong Sprint Planning. Team cam kết hoàn thành.</p>
+      </div>
+    </div>
+
+    <pre>
+Product Backlog              Sprint Backlog
+(To-do cả dự án)     →       (To-do sprint này)
+
+- Task A ⭐⭐⭐             - Task A ✅ đang làm
+- Task B ⭐⭐⭐             - Task B ✅ đang làm
+- Task C ⭐⭐               - Task C 🔲 chưa làm
+- Task D ⭐
+- Task E ⭐                (D, E chưa được chọn)</pre>
+
+    <pre class="green">
+Product Backlog → Grooming → Sprint Planning → Sprint Backlog → Team làm việc</pre>
+  </section>
+
+  <!-- STORY POINT -->
+  <section id="story-point">
+    <div class="section-num">05 — Estimate</div>
+    <h2>Story Point & Planning Poker</h2>
+
+    <p>Story Point đo độ phức tạp của task — không phải thời gian cụ thể.</p>
+
+    <pre>
+Story Point = Độ phức tạp + Khối lượng công việc + Rủi ro / Mơ hồ</pre>
+
+    <h3>Dãy Fibonacci</h3>
+    <pre>
+1 → 2 → 3 → 5 → 8 → 13 → 21
+
+Càng lớn = càng phức tạp / mơ hồ / rủi ro
+Khoảng cách giãn ra vì task to thì estimate không chắc chắn</pre>
+
+    <table>
+      <tr><th>Task</th><th>Point</th><th>Lý do</th></tr>
+      <tr><td>Fix lỗi typo UI</td><td><code>1</code></td><td>Quá đơn giản</td></tr>
+      <tr><td>Làm form đăng nhập</td><td><code>3</code></td><td>Bình thường</td></tr>
+      <tr><td>Tích hợp cổng thanh toán</td><td><code>13</code></td><td>Phức tạp, nhiều bên</td></tr>
+      <tr><td>Migrate database</td><td><code>21</code></td><td>Rủi ro cao, chưa rõ</td></tr>
+    </table>
+
+    <h3>Planning Poker</h3>
+    <pre>
+Bước 1: PO đọc task + giải thích requirement
+            ↓
+Bước 2: Team hỏi nếu chưa rõ
+            ↓
+Bước 3: Mỗi người tự chọn con số (im lặng)
+            ↓
+Bước 4: Đếm 1-2-3 → lật bài cùng lúc
+            ↓
+   Giống nhau? → Chốt luôn
+   Chênh lệch? → Người cao/thấp nhất giải thích → Vote lại</pre>
+
+    <div class="highlight">
+      <p>Lật bài cùng lúc để tránh bị ảnh hưởng bởi người khác — đặc biệt là senior hoặc sếp.</p>
+    </div>
+
+    <h3>Chia Task (Story Splitting)</h3>
+    <p>Task estimate 8+ points → xem xét chia. Task 13–21 points → gần như chắc chắn phải chia.</p>
+
+    <pre class="yellow">
+Ví dụ chia theo workflow:
+"Quản lý sản phẩm" (21pts)
+  → Xem danh sách    (3pts)
+  → Thêm sản phẩm    (5pts)
+  → Chỉnh sửa        (3pts)
+  → Xóa              (2pts)
+  → Tìm kiếm/filter  (5pts)</pre>
+
+    <h4>Tiêu chí INVEST cho một task tốt:</h4>
+    <pre class="green">
+I — Independent   Không phụ thuộc task khác
+N — Negotiable    Có thể thay đổi cách làm
+V — Valuable      Tạo ra giá trị thực sự
+E — Estimable     Estimate được
+S — Small         Đủ nhỏ để làm trong sprint
+T — Testable      Có thể test được</pre>
+  </section>
+
+  <!-- VELOCITY -->
+  <section id="velocity">
+    <div class="section-num">06 — Velocity</div>
+    <h2>Velocity</h2>
+
+    <p>Số story point team thực tế hoàn thành trong 1 sprint.</p>
+
+    <pre>
+Sprint 1: hoàn thành 20 pts / 10 ngày  → velocity = 20
+Sprint 2: hoàn thành 22 pts / 10 ngày  → velocity = 22
+Sprint 3: hoàn thành 24 pts / 10 ngày  → velocity = 24
+─────────────────────────────────────────────────────
+Velocity trung bình = 22 pts/sprint</pre>
+
+    <h3>Dùng Velocity để làm gì?</h3>
+
+    <div class="two-col">
+      <div class="card">
+        <h4>Chọn task vừa sức</h4>
+        <p>Velocity = 22 → Sprint này chỉ chọn ~22 pts. Không nhận 40 pts rồi làm không xong.</p>
+      </div>
+      <div class="card">
+        <h4>Dự đoán deadline</h4>
+        <p>Còn 110 pts ÷ 22 pts/sprint = 5 sprint × 2 tuần = ~10 tuần nữa xong.</p>
+      </div>
+    </div>
+
+    <pre class="red">
+❌ Velocity KHÔNG phải KPI
+❌ Không so sánh velocity giữa các team
+❌ Không dùng để pressure team làm nhanh hơn
+✅ Chỉ dùng để team tự estimate sprint tiếp theo</pre>
+
+    <h3>Story Point → Thời gian thật</h3>
+    <pre>
+Team 4 người, sprint 2 tuần, velocity 40 pts:
+
+40 pts ÷ 4 người ÷ 10 ngày = 1 point ≈ 1 ngày/người
+
+Nhưng KHÔNG convert cứng nhắc:
+Task A: 3 points → Senior làm 1 ngày
+Task B: 3 points → Junior làm 3 ngày</pre>
+  </section>
+
+  <!-- USER STORY -->
+  <section id="user-story">
+    <div class="section-num">07 — User Story</div>
+    <h2>User Story</h2>
+    <p>Cách viết requirement từ góc nhìn người dùng.</p>
+
+    <pre class="green">
+As a   [ai]
+I want [muốn làm gì]
+So that [để đạt được gì]</pre>
+
+    <div class="two-col">
+      <pre class="red">
+❌ Kiểu kỹ thuật:
+"Tạo API POST /auth/login
+nhận username, password,
+trả về JWT token"</pre>
+      <pre class="green">
+✅ Kiểu User Story:
+"As a user,
+I want to log in with
+email and password,
+so that I can access
+my account"</pre>
+    </div>
+
+    <h3>Acceptance Criteria</h3>
+    <p>Điều kiện để task được coi là xong.</p>
+    <pre class="green">
+User Story: Đăng nhập bằng email/password
+
+Acceptance Criteria:
+✅ Đăng nhập đúng → vào được trang chủ
+✅ Sai password → hiện thông báo lỗi rõ ràng
+✅ Sai 5 lần → khóa tài khoản 15 phút
+✅ Có nút "Forgot password"
+✅ Có option "Remember me"</pre>
+  </section>
+
+  <!-- DEFINITION OF DONE -->
+  <section id="dod">
+    <div class="section-num">08 — Definition of Done</div>
+    <h2>Definition of Done (DoD)</h2>
+    <p>Danh sách tiêu chí cả team đồng ý — task chỉ được coi là "Done" khi đáp ứng tất cả.</p>
+
+    <pre class="green">
+Một task được coi là DONE khi:
+
+□ Code đã được review bởi ít nhất 1 người
+□ Unit test đã viết và pass
+□ Không có bug nghiêm trọng
+□ Đã merge vào branch chính
+□ Đã deploy lên môi trường staging
+□ PO đã confirm đúng requirement
+□ Documentation đã cập nhật (nếu cần)</pre>
+
+    <table>
+      <tr><th></th><th>Acceptance Criteria</th><th>Definition of Done</th></tr>
+      <tr><td>Áp dụng cho</td><td>Từng task cụ thể</td><td>Tất cả mọi task</td></tr>
+      <tr><td>Ai define</td><td>PO</td><td>Cả team</td></tr>
+      <tr><td>Nội dung</td><td>Task này phải làm gì</td><td>Quy trình hoàn thành task</td></tr>
+      <tr><td>Ví dụ</td><td>"Sai password hiện lỗi"</td><td>"Code đã được review"</td></tr>
+    </table>
+  </section>
+
+  <!-- BLOCKERS -->
+  <section id="blocker">
+    <div class="section-num">09 — Blockers</div>
+    <h2>Handle Blockers</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🔴</div>
+        <h4>Technical Blocker</h4>
+        <p>API bên thứ 3 chưa sẵn sàng. Môi trường dev đang bị lỗi.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🟡</div>
+        <h4>Requirement Blocker</h4>
+        <p>Chưa rõ UI phải trông như thế nào. PO chưa confirm flow.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🟠</div>
+        <h4>Dependency Blocker</h4>
+        <p>Task cần task của người khác xong trước. Đang chờ team khác cung cấp API.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔵</div>
+        <h4>Resource Blocker</h4>
+        <p>Không có quyền truy cập server. Thiếu tài khoản test.</p>
+      </div>
+    </div>
+
+    <h3>Quy trình xử lý</h3>
+    <pre>
+Phát hiện blocker
+      ↓
+Tự giải quyết trong 15–30 phút
+      ↓
+Không xong → Raise lên Daily Standup ngay hôm đó
+      ↓
+Scrum Master nhận → tìm cách remove
+      ↓
+Trong lúc chờ → chuyển sang task khác
+      ↓
+Blocker xong → quay lại task</pre>
+
+    <div class="two-col">
+      <pre class="red">
+❌ Sai:
+"Tôi đang bị block bởi API
+của team backend,
+tôi ngồi chờ họ"</pre>
+      <pre class="green">
+✅ Đúng:
+"Tôi bị block bởi API backend.
+Scrum Master liên hệ họ hộ tôi được không?
+Lúc chờ tôi sẽ làm task #23"</pre>
+    </div>
+  </section>
+
+  <!-- KANBAN BOARD -->
+  <section id="kanban">
+    <div class="section-num">10 — Kanban Board</div>
+    <h2>Kanban Board</h2>
+    <p>Bảng visualize công việc — nhìn vào biết ngay ai đang làm gì, task nào bị kẹt.</p>
+
+    <pre>
+BACKLOG → TO DO → IN PROGRESS → CODE REVIEW → TESTING → DONE
+
+┌──────────┬──────────────┬─────────────┬──────────┐
+│  TO DO   │  IN PROGRESS │   TESTING   │   DONE   │
+├──────────┼──────────────┼─────────────┼──────────┤
+│ Task A   │   Task C     │   Task E    │ Task G   │
+│ Task B   │   Task D     │             │ Task H   │
+└──────────┴──────────────┴─────────────┴──────────┘</pre>
+
+    <h3>WIP Limit</h3>
+    <p>Giới hạn số task đang làm cùng lúc.</p>
+    <pre class="red">
+Không có WIP limit:
+Dev nhận 5 task cùng lúc
+→ context switch liên tục
+→ task nào cũng dở dang
+→ không cái nào xong</pre>
+    <pre class="green">
+Có WIP limit (ví dụ max 2):
+→ focus vào 1–2 task
+→ làm xong hẳn mới nhận task mới
+→ flow nhanh hơn</pre>
+
+    <h4>Tools phổ biến:</h4>
+    <pre>
+Jira          ← phổ biến nhất ở công ty lớn
+Trello        ← đơn giản, dễ dùng
+Notion        ← linh hoạt
+Linear        ← được dev yêu thích
+Azure DevOps  ← team Microsoft stack</pre>
+  </section>
+
+  <!-- SCRUM VS KANBAN -->
+  <section id="scrum-vs-kanban">
+    <div class="section-num">11 — So sánh</div>
+    <h2>Scrum vs Kanban</h2>
+
+    <pre>
+Scrum     → làm việc theo Sprint (có điểm bắt đầu, kết thúc)
+Kanban    → làm việc liên tục (task vào thì làm, xong thì lấy task mới)</pre>
+
+    <table>
+      <tr><th></th><th>Scrum</th><th>Kanban</th></tr>
+      <tr><td>Nhịp làm việc</td><td>Sprint 1–2 tuần</td><td>Liên tục, không có sprint</td></tr>
+      <tr><td>Roles</td><td>PO, Scrum Master, Dev Team</td><td>Không bắt buộc</td></tr>
+      <tr><td>Meeting</td><td>Planning, Daily, Review, Retro</td><td>Chỉ Daily (tùy team)</td></tr>
+      <tr><td>Thay đổi task</td><td><span class="badge badge-red">❌ Giữa sprint</span></td><td><span class="badge badge-green">✅ Bất cứ lúc nào</span></td></tr>
+      <tr><td>Estimate</td><td>Story Point</td><td>Không bắt buộc</td></tr>
+      <tr><td>Đo lường</td><td>Velocity</td><td>Cycle Time / Lead Time</td></tr>
+      <tr><td>WIP Limit</td><td>Không bắt buộc</td><td><span class="badge badge-green">✅ Bắt buộc</span></td></tr>
+    </table>
+
+    <h3>Khi nào dùng cái nào?</h3>
+    <div class="two-col">
+      <pre class="blue">
+Dùng Scrum khi:
+✅ Build sản phẩm mới từ đầu
+✅ Cần demo định kỳ cho stakeholder
+✅ Team cần cấu trúc rõ ràng
+✅ Requirement thay đổi theo sprint</pre>
+      <pre class="green">
+Dùng Kanban khi:
+✅ Team support / maintenance
+✅ Bug fix liên tục
+✅ Task nhỏ, vào bất chợt
+✅ Team nhỏ, ít meeting overhead</pre>
+    </div>
+
+    <div class="highlight">
+      <p><strong>Scrumban</strong> — kết hợp cả 2: Sprint 2 tuần + WIP Limit + cho phép đổi task gấp. Phổ biến ở nhiều team thực tế.</p>
+    </div>
+  </section>
+
+  <!-- AGILE VS WATERFALL -->
+  <section id="agile-vs-waterfall">
+    <div class="section-num">12 — Methodology</div>
+    <h2>Agile vs Waterfall</h2>
+
+    <pre>
+Waterfall → tuần tự, từng bước, xong bước này mới sang bước kia
+Agile     → vòng lặp ngắn, liên tục điều chỉnh theo feedback</pre>
+
+    <div class="two-col">
+      <pre class="red">
+Waterfall:
+Requirements (tháng 1–2)
+    ↓
+Design (tháng 3–4)
+    ↓
+Development (tháng 5–8)
+    ↓
+Testing (tháng 9)
+    ↓
+Deploy (tháng 10)
+→ Khách hàng thấy lần đầu
+  vào tháng 10!</pre>
+      <pre class="green">
+Agile:
+Sprint 1 → sản phẩm nhỏ → feedback
+Sprint 2 → cải thiện    → feedback
+Sprint 3 → thêm tính năng → feedback
+...
+→ Khách hàng thấy sản phẩm
+  sau sprint 1 (2 tuần)!</pre>
+    </div>
+
+    <table>
+      <tr><th></th><th>Waterfall</th><th>Agile</th></tr>
+      <tr><td>Cách làm</td><td>Tuần tự, từng bước</td><td>Vòng lặp ngắn</td></tr>
+      <tr><td>Thay đổi requirement</td><td><span class="badge badge-red">❌ Rất khó, tốn kém</span></td><td><span class="badge badge-green">✅ Linh hoạt</span></td></tr>
+      <tr><td>Khách hàng thấy sản phẩm</td><td>Cuối dự án</td><td>Sau mỗi sprint</td></tr>
+      <tr><td>Rủi ro</td><td>Cao — phát hiện muộn</td><td>Thấp — phát hiện sớm</td></tr>
+      <tr><td>Estimate</td><td>Giờ / ngày / tuần (1 lần)</td><td>Story Point (mỗi sprint)</td></tr>
+    </table>
+
+    <h3>4 giá trị cốt lõi của Agile Manifesto (2001)</h3>
+    <pre class="green">
+1. Con người và tương tác  >  quy trình và công cụ
+2. Phần mềm chạy được      >  tài liệu đầy đủ
+3. Hợp tác với khách hàng  >  đàm phán hợp đồng
+4. Thích nghi với thay đổi >  làm theo kế hoạch cứng nhắc
+
+(Không bỏ vế phải — vế trái quan trọng hơn)</pre>
+
+    <h3>Waterfall Estimate Methods</h3>
+    <table>
+      <tr><th>Phương pháp</th><th>Cách làm</th><th>Độ chính xác</th></tr>
+      <tr><td>Expert Judgment</td><td>Tech Lead tự estimate từ kinh nghiệm</td><td>Trung bình</td></tr>
+      <tr><td>Analogous</td><td>So sánh với dự án cũ tương tự</td><td>Thấp</td></tr>
+      <tr><td>Bottom-Up</td><td>Chia nhỏ + cộng lại từng task</td><td>Cao nhất</td></tr>
+      <tr><td>Three-Point</td><td>E = (Optimistic + 4×Most Likely + Pessimistic) / 6</td><td>Khá tốt</td></tr>
+    </table>
+
+    <div class="highlight">
+      <p>Waterfall luôn thêm buffer 20–30% vì phải estimate 1 lần duy nhất từ đầu dự án — khi chưa biết gì nhiều nhất.</p>
+    </div>
+  </section>
+
+  <!-- KAIZEN -->
+  <section id="kaizen">
+    <div class="section-num">13 — Kaizen</div>
+    <h2>Kaizen & Team trưởng thành</h2>
+
+    <p><strong>Kaizen</strong> (改善) = "cải tiến liên tục". Cải thiện từng bước nhỏ mỗi ngày, không chờ vấn đề lớn.</p>
+
+    <pre>
+Sprint kết thúc
+      ↓
+Retro: cái gì tốt? cái gì chưa tốt?
+      ↓
+Chọn 1–2 điểm cải tiến nhỏ
+      ↓
+Áp dụng ngay sprint sau  ← đây là Kaizen
+      ↓
+Lặp lại mãi...</pre>
+
+    <h3>Dấu hiệu team đang trưởng thành</h3>
+    <p>Sau nhiều sprint, team tự nhiên giảm bớt ceremony không cần thiết. Đây là điều bình thường và lành mạnh.</p>
+
+    <div class="two-col">
+      <pre class="green">
+✅ Giảm đúng cách:
+Velocity ổn định hoặc tăng
+Ít blocker bất ngờ
+Team vẫn tự sync tốt
+PO vẫn nắm được tiến độ
+Bug không tăng</pre>
+      <pre class="red">
+❌ Giảm sai cách:
+Velocity bắt đầu giảm
+Bug tăng lên
+Không ai biết người kia làm gì
+PO bị surprise ở sprint review
+Blocker phát hiện muộn</pre>
+    </div>
+
+    <h3>Fake Agile — cảnh báo</h3>
+    <pre class="red">
+Dấu hiệu team đang làm Fake Agile:
+
+❌ PM assign task thay vì team tự chọn
+❌ Daily = báo cáo tiến độ lên sếp
+❌ Sprint Review = demo cho có, không lấy feedback thật
+❌ Retro = họp cho xong, không ai dám nói thật
+❌ Story point bị convert thành giờ để tính KPI
+❌ Velocity dùng để pressure team làm nhanh hơn</pre>
+
+    <div class="highlight">
+      <p>Ceremony trong Scrum là công cụ, không phải mục tiêu. Team trưởng thành tự biết dùng khi nào cần — không phải bỏ vì lười, mà bỏ vì đã internalize tư duy Agile rồi.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Agile/Scrum Reference Guide — Tổng hợp từ conversation thực tế
+</footer>
+
+<script>
+  document.querySelectorAll('nav a').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('href').replace('#', '');
+      const target = document.getElementById(targetId);
+      if (target) {
+        const navHeight = document.querySelector('nav').offsetHeight;
+        const top = target.getBoundingClientRect().top + window.scrollY - navHeight - 16;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    });
+  });
+</script>
+</body>
+</html>
