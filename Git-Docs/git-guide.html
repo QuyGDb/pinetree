@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Visual Guide — Merge · Rebase · Reset · Revert</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --border: #1e2330;
+    --text: #c9d1e0;
+    --muted: #4a5568;
+    --accent-blue: #4f9cf9;
+    --accent-green: #3ecf8e;
+    --accent-orange: #f5a623;
+    --accent-red: #f76363;
+    --accent-purple: #a78bfa;
+    --node-size: 38px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: .4;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    position: relative;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, #0d1a2e 0%, transparent 70%);
+  }
+
+  .hero-tag {
+    font-size: .7rem; letter-spacing: .25em; text-transform: uppercase;
+    color: var(--accent-blue); border: 1px solid #1a3a5c;
+    padding: .35rem 1rem; border-radius: 99px; margin-bottom: 2rem;
+    display: inline-block;
+    animation: fadeUp .6s ease both;
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    font-weight: 800; line-height: 1.08;
+    letter-spacing: -.03em;
+    animation: fadeUp .7s .1s ease both;
+  }
+
+  .hero h1 span { color: var(--accent-blue); }
+
+  .hero-sub {
+    margin-top: 1.5rem; max-width: 480px;
+    color: var(--muted); font-size: .88rem;
+    animation: fadeUp .7s .2s ease both;
+  }
+
+  .scroll-hint {
+    margin-top: 4rem; font-size: .72rem; color: var(--muted);
+    letter-spacing: .12em; text-transform: uppercase;
+    animation: fadeUp .7s .4s ease both, bounce 2s 1.5s ease-in-out infinite;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,12,16,.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: .75rem 2rem;
+    display: flex; gap: 2rem; justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  nav a, .nav-btn {
+    font-size: .75rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); text-decoration: none;
+    background: none; border: none; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 0;
+    transition: color .2s;
+  }
+  nav a:hover, .nav-btn:hover { color: var(--accent-blue); }
+  .nav-btn.active { color: var(--accent-blue); }
+
+  /* ── SECTIONS ── */
+  section {
+    max-width: 860px; margin: 0 auto;
+    padding: 5rem 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-size: .68rem; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent-blue); margin-bottom: .75rem;
+  }
+
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 800; letter-spacing: -.02em;
+    margin-bottom: .5rem;
+  }
+
+  .desc { color: var(--muted); font-size: .88rem; max-width: 520px; margin-bottom: 2.5rem; }
+
+  /* ── GIT GRAPH (legacy, kept for revert section) ── */
+  .git-visual {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem 2.5rem;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .branch-row {
+    display: flex; align-items: center;
+    gap: 0; margin: 12px 0;
+    position: relative;
+  }
+
+  .branch-label {
+    font-size: .7rem; letter-spacing: .06em; text-transform: uppercase;
+    width: 80px; text-align: right; padding-right: 16px; flex-shrink: 0;
+    color: var(--muted);
+  }
+  .branch-label.main  { color: var(--accent-blue); }
+  .branch-label.feat  { color: var(--accent-green); }
+
+  .track {
+    display: flex; align-items: center;
+    flex: 1; position: relative;
+  }
+
+  .node {
+    width: var(--node-size); height: var(--node-size);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .62rem; font-weight: 700; letter-spacing: -.01em;
+    flex-shrink: 0;
+    position: relative; z-index: 2;
+    cursor: default;
+    transition: transform .18s, box-shadow .18s;
+  }
+  .node:hover { transform: scale(1.12); }
+
+  .node.blue   { background: #0e2a4a; border: 2px solid var(--accent-blue);   color: var(--accent-blue); box-shadow: 0 0 14px rgba(79,156,249,.25); }
+  .node.green  { background: #0b2e20; border: 2px solid var(--accent-green);  color: var(--accent-green); box-shadow: 0 0 14px rgba(62,207,142,.25); }
+  .node.orange { background: #2e1e0b; border: 2px solid var(--accent-orange); color: var(--accent-orange); box-shadow: 0 0 14px rgba(245,166,35,.25); }
+  .node.red    { background: #2e0b0b; border: 2px solid var(--accent-red);    color: var(--accent-red);   box-shadow: 0 0 14px rgba(247,99,99,.25); }
+  .node.purple { background: #1a1030; border: 2px solid var(--accent-purple); color: var(--accent-purple);box-shadow: 0 0 14px rgba(167,139,250,.25); }
+  .node.ghost  { opacity: .2; border-style: dashed; }
+
+  .line {
+    height: 2px; flex: 1;
+    background: var(--border); min-width: 20px;
+  }
+  .line.blue   { background: linear-gradient(90deg, var(--accent-blue), #1a3a5c); }
+  .line.green  { background: linear-gradient(90deg, var(--accent-green), #0b2e20); }
+
+  .node-tag {
+    position: absolute; bottom: calc(100% + 4px); left: 50%;
+    transform: translateX(-50%);
+    font-size: .58rem; letter-spacing: .05em; text-transform: uppercase;
+    padding: .15rem .4rem; border-radius: 4px;
+    white-space: nowrap; pointer-events: none;
+  }
+  .tag-head   { background: #0e2a4a; color: var(--accent-blue); border: 1px solid #1a3a5c; }
+  .tag-merge  { background: #2e1e0b; color: var(--accent-orange); border: 1px solid #4a3010; }
+  .tag-revert { background: #1a1030; color: var(--accent-purple); border: 1px solid #2a1a50; }
+  .tag-trash  { background: #2e0b0b; color: var(--accent-red); border: 1px solid #4a1010; }
+
+  /* diagonal merge connector */
+  .connector-wrap {
+    position: relative;
+    display: flex; align-items: center;
+  }
+
+  svg.curve {
+    position: absolute;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  /* ── TOOLTIP ── */
+  .node[data-tip] { cursor: pointer; }
+  .tooltip {
+    position: fixed;
+    background: #1a1f2e; border: 1px solid var(--border);
+    border-radius: 8px; padding: .6rem .9rem;
+    font-size: .75rem; color: var(--text);
+    pointer-events: none; z-index: 999;
+    opacity: 0; transform: translateY(4px);
+    transition: opacity .15s, transform .15s;
+    max-width: 220px; line-height: 1.5;
+  }
+  .tooltip.show { opacity: 1; transform: translateY(0); }
+
+  /* ── STEP PLAYER ── */
+  .step-player {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+
+  .step-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .step-dots {
+    display: flex; gap: 6px;
+  }
+  .step-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); cursor: pointer;
+    transition: background .2s, transform .2s;
+  }
+  .step-dot.active { transform: scale(1.3); }
+
+  .step-body {
+    padding: 2rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+    align-items: center;
+  }
+  @media(max-width:600px){ .step-body { grid-template-columns:1fr; } }
+
+  .step-info h3 {
+    font-family: 'Syne', sans-serif; font-size: 1.1rem;
+    margin-bottom: .5rem;
+  }
+  .step-info p { font-size: .82rem; color: var(--muted); }
+
+  .code-chip {
+    display: inline-block; margin-top: .75rem;
+    background: #080b12; border: 1px solid var(--border);
+    border-radius: 6px; padding: .35rem .75rem;
+    font-size: .78rem; color: var(--accent-green);
+  }
+
+  .step-graph { min-height: 120px; display: flex; align-items: center; }
+
+  .step-controls {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex; gap: .75rem; justify-content: flex-end;
+  }
+
+  .btn {
+    padding: .45rem 1.1rem;
+    border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem; cursor: pointer;
+    transition: background .2s, color .2s, border-color .2s;
+  }
+  .btn:hover { background: var(--border); }
+  .btn.primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+  .btn.primary:hover { opacity: .85; }
+
+  /* ── RESET TABS ── */
+  .reset-tabs {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: .75rem;
+    margin-bottom: 1rem;
+  }
+  @media(max-width:560px){ .reset-tabs { grid-template-columns:1fr; } }
+
+  .rtab {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 10px; padding: .9rem 1rem;
+    cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; gap: .25rem;
+    transition: border-color .2s, transform .15s, background .2s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .rtab:hover { transform: translateY(-2px); }
+  .rtab-key  { font-size: .9rem; font-weight: 700; }
+  .rtab-sub  { font-size: .7rem; color: var(--muted); }
+
+  .rtab-soft  { }
+  .rtab-mixed { }
+  .rtab-hard  { }
+  .rtab-soft.active  { border-color: var(--accent-green);  background: #081a10; }
+  .rtab-mixed.active { border-color: var(--accent-orange); background: #1a0f00; }
+  .rtab-hard.active  { border-color: var(--accent-red);    background: #1a0808; }
+  .rtab-soft  .rtab-key { color: var(--accent-green);  }
+  .rtab-mixed .rtab-key { color: var(--accent-orange); }
+  .rtab-hard  .rtab-key { color: var(--accent-red);    }
+
+  /* ── RESET MAIN VISUALIZER ── */
+  .reset-vis-main {
+    display: grid; grid-template-columns: 1fr 1.65fr; gap: 1.25rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  @media(max-width:680px){ .reset-vis-main { grid-template-columns:1fr; } }
+
+  .rviz-left {
+    padding: 1.5rem;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .rviz-right {
+    padding: 1.5rem;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .rviz-label {
+    font-size: .65rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: .25rem;
+  }
+
+  /* timeline */
+  .rviz-timeline { display: flex; flex-direction: column; gap: .5rem; }
+  .rvt-item {
+    display: flex; align-items: center; gap: .75rem;
+    transition: opacity .3s;
+  }
+  .rvt-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .rvt-dot.blue    { background: var(--accent-blue); box-shadow: 0 0 6px rgba(79,156,249,.5); }
+  .rvt-dot.red-dim { background: #4a2020; border: 1px solid var(--accent-red); }
+  .rvt-dot.rvt-head { box-shadow: 0 0 0 3px rgba(79,156,249,.25); }
+  .rvt-info { font-size: .76rem; display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+  .rvt-hash { color: var(--muted); font-size: .68rem; }
+  .rvt-badge {
+    font-size: .6rem; padding: .1rem .4rem; border-radius: 4px;
+    background: #0e2a4a; color: var(--accent-blue); border: 1px solid #1a3a5c;
+  }
+  .rvt-gone { opacity: .35; }
+  .rvt-strikethrough { text-decoration: line-through; color: var(--muted); }
+
+  .rviz-cmd-box {
+    background: #080b12; border: 1px solid var(--border);
+    border-radius: 7px; padding: .6rem .9rem;
+    font-size: .78rem; color: var(--accent-orange);
+    transition: color .3s;
+  }
+
+  /* flow zones */
+  .flow-zones {
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .fzone {
+    border-radius: 8px; padding: 1rem 1.1rem;
+    border: 1px solid transparent;
+    transition: border-color .35s, background .35s, opacity .35s, transform .25s;
+  }
+  .fzone-repo    { background: #0b150b; border-color: #1a2e1a; }
+  .fzone-staging { background: #15130b; border-color: #2e2a1a; }
+  .fzone-working { background: #0b0b18; border-color: #1a1a2e; }
+
+  .fzone.fzone-active-green  { border-color: var(--accent-green);  background: #0b2010; }
+  .fzone.fzone-active-orange { border-color: var(--accent-orange); background: #20150a; }
+  .fzone.fzone-active-blue   { border-color: var(--accent-blue);   background: #0a1020; }
+  .fzone.fzone-dim { opacity: .28; transform: scale(.98); }
+
+  .fzone-header { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+  .fzone-icon { font-size: 1rem; }
+  .fzone-title { font-size: .78rem; font-weight: 700; }
+  .fzone-hint  { font-size: .65rem; color: var(--muted); }
+  .fzone-body  { display: flex; flex-direction: column; gap: .3rem; }
+  .fzone-file {
+    font-size: .73rem; padding: .25rem .5rem;
+    border-radius: 5px; transition: background .3s, color .3s;
+  }
+  .fzone-file.present { color: var(--accent-green);  background: rgba(62,207,142,.08); }
+  .fzone-file.gone    { color: var(--accent-red);    background: rgba(247,99,99,.08); }
+  .fzone-file.here    { color: var(--accent-orange); background: rgba(245,166,35,.1); }
+  .fzone-file.here-blue { color: var(--accent-blue); background: rgba(79,156,249,.1); }
+  .fzone-empty { font-size: .72rem; color: var(--muted); font-style: italic; padding: .2rem .5rem; }
+
+  /* flow arrows between zones */
+  .flow-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    padding: .3rem 0; gap: .2rem;
+    transition: opacity .3s;
+  }
+  .flow-arrow-line {
+    width: 2px; height: 18px;
+    background: var(--border);
+    transition: background .3s;
+  }
+  .flow-arrow-label {
+    font-size: .62rem; letter-spacing: .05em;
+    color: var(--muted); text-align: center; min-height: 1em;
+    transition: color .3s;
+  }
+  .flow-arrow.arrow-active .flow-arrow-line { background: var(--accent-orange); }
+  .flow-arrow.arrow-active .flow-arrow-label { color: var(--accent-orange); }
+  .flow-arrow.arrow-skip { opacity: .25; }
+
+  /* outcome banner */
+  .outcome-banner {
+    display: flex; align-items: flex-start; gap: .75rem;
+    padding: .9rem 1rem; border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: background .35s, border-color .35s;
+  }
+  .outcome-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .outcome-title { font-size: .8rem; font-weight: 700; margin-bottom: .2rem; }
+  .outcome-desc  { font-size: .74rem; color: var(--muted); }
+
+  /* next step box */
+  .next-step-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.25rem 1.5rem;
+    margin-top: 1rem;
+    display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+  }
+  .nstep-label { font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); flex-shrink:0; }
+  .nstep-cmd {
+    background: #080b12; border: 1px solid var(--border);
+    border-radius: 6px; padding: .35rem .9rem;
+    font-size: .82rem; color: var(--accent-green); flex-shrink:0;
+    transition: color .3s;
+  }
+  .nstep-desc { font-size: .76rem; color: var(--muted); }
+
+  /* ── COMPARISON TABLE ── */
+  .cmp-table {
+    width: 100%; border-collapse: collapse; margin-top: 1.5rem;
+  }
+  .cmp-table th {
+    font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); text-align: left;
+    padding: .6rem 1rem; border-bottom: 1px solid var(--border);
+  }
+  .cmp-table td {
+    padding: .85rem 1rem; border-bottom: 1px solid var(--border);
+    font-size: .82rem; vertical-align: top;
+  }
+  .cmp-table tr:last-child td { border-bottom: none; }
+  .cmp-table tr { transition: background .15s; }
+  .cmp-table tbody tr:hover { background: var(--surface); }
+
+  .badge {
+    display: inline-block; border-radius: 4px;
+    padding: .18rem .55rem; font-size: .7rem; font-weight: 700;
+  }
+  .badge-blue   { background: #0e2a4a; color: var(--accent-blue); }
+  .badge-green  { background: #0b2e20; color: var(--accent-green); }
+  .badge-orange { background: #2e1e0b; color: var(--accent-orange); }
+  .badge-red    { background: #2e0b0b; color: var(--accent-red); }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center; padding: 3rem 2rem;
+    color: var(--muted); font-size: .75rem;
+  }
+  footer span { color: var(--accent-blue); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(16px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  @keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(6px); }
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 8px rgba(79,156,249,.3); }
+    50%      { box-shadow: 0 0 22px rgba(79,156,249,.6); }
+  }
+  @keyframes drawLine {
+    from { stroke-dashoffset: 200; }
+    to   { stroke-dashoffset: 0; }
+  }
+  .node.highlight { animation: pulse 1.5s ease infinite; }
+
+  /* ── MERGE SECTION ── */
+  .merge-toggle {
+    display: flex; gap: .5rem; margin-bottom: 1rem;
+  }
+  .mtog {
+    padding: .5rem 1.4rem; border-radius: 7px;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem; cursor: pointer;
+    transition: background .2s, color .2s, border-color .2s;
+  }
+  .mtog:hover { color: var(--text); border-color: #2e3a50; }
+  .mtog.active { background: var(--surface); color: var(--text); border-color: var(--accent-blue); }
+
+  .merge-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .mpanel-label {
+    padding: .85rem 1.4rem;
+    font-size: .78rem; color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+  }
+  .mpanel-badge {
+    display: inline-block; border-radius: 4px;
+    padding: .12rem .55rem; font-size: .72rem; font-weight: 700;
+  }
+  .mpanel-badge-blue   { background: #0e2a4a; color: var(--accent-blue); }
+  .mpanel-badge-green  { background: #0b2e20; color: var(--accent-green); }
+  .mpanel-badge-orange { background: #2e1e0b; color: var(--accent-orange); }
+
+  .merge-svg-wrap {
+    padding: 1.2rem 1.4rem 0;
+  }
+  .merge-svg-wrap svg {
+    width: 100%; height: auto; display: block;
+    max-height: 170px;
+  }
+
+  .merge-legend {
+    display: flex; gap: 1.25rem; flex-wrap: wrap;
+    padding: .9rem 1.4rem 1.2rem;
+  }
+  .mleg-item {
+    display: flex; align-items: center; gap: .45rem;
+    font-size: .72rem; color: var(--muted);
+  }
+  .mleg-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .merge-callout {
+    display: flex; align-items: flex-start; gap: .85rem;
+    background: rgba(79,156,249,.05);
+    border: 1px solid rgba(79,156,249,.2);
+    border-radius: 10px; padding: 1rem 1.2rem;
+    margin-bottom: .5rem;
+  }
+  .mcallout-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: .1rem; }
+  .mcallout-title { font-size: .82rem; font-weight: 700; margin-bottom: .25rem; }
+  .mcallout-desc  { font-size: .74rem; color: var(--muted); }
+
+  /* observe-fade */
+  .obs {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity .55s ease, transform .55s ease;
+  }
+  .obs.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- HERO -->
+<header class="hero">
+  <span class="hero-tag">Visual Guide · Antigravity AI</span>
+  <h1>Git <span>Visual</span><br>Playbook</h1>
+  <p class="hero-sub">Merge · Rebase · Reset · Revert — được giải thích bằng hình ảnh tương tác, không phải lý thuyết khô khan.</p>
+  <div class="scroll-hint">↓ Cuộn xuống để khám phá</div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <button class="nav-btn" data-target="merge">Merge</button>
+  <button class="nav-btn" data-target="rebase">Rebase</button>
+  <button class="nav-btn" data-target="reset">Reset</button>
+  <button class="nav-btn" data-target="revert">Revert</button>
+  <button class="nav-btn" data-target="compare">So sánh</button>
+</nav>
+
+<!-- ════════════════════════════════════════
+     SECTION 1 — MERGE
+════════════════════════════════════════ -->
+<section id="merge">
+  <div class="section-label obs">01 — Merge</div>
+  <h2 class="obs">Git Merge</h2>
+  <p class="desc obs">Gộp nhánh <code>feature</code> vào <code>main</code> bằng cách tạo thêm một <em>merge commit</em> — giữ nguyên toàn bộ lịch sử của cả 2 nhánh.</p>
+
+  <!-- BEFORE / AFTER TOGGLE -->
+  <div class="merge-toggle obs">
+    <button class="mtog active" id="mtog-before">Trước khi merge</button>
+    <button class="mtog" id="mtog-after">Sau khi merge</button>
+  </div>
+
+  <!-- BEFORE panel -->
+  <div class="merge-panel obs" id="mpanel-before">
+    <div class="mpanel-label">
+      <span class="mpanel-badge mpanel-badge-blue">main</span>
+      và
+      <span class="mpanel-badge mpanel-badge-green">feature</span>
+      đang phát triển song song — chưa được gộp
+    </div>
+    <div class="merge-svg-wrap">
+      <svg id="svg-before" viewBox="0 0 640 160" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="merge-legend">
+      <div class="mleg-item"><span class="mleg-dot" style="background:var(--accent-blue)"></span>main: C1 → C2 → C3 (vẫn đang tiến)</div>
+      <div class="mleg-item"><span class="mleg-dot" style="background:var(--accent-green)"></span>feature: tách từ C1, có thêm F1 → F2</div>
+      <div class="mleg-item"><span class="mleg-dot" style="background:var(--muted);width:14px;height:2px;border-radius:1px;"></span>Hai nhánh hoàn toàn độc lập với nhau</div>
+    </div>
+  </div>
+
+  <!-- AFTER panel -->
+  <div class="merge-panel obs" id="mpanel-after" style="display:none;">
+    <div class="mpanel-label">
+      Sau <code>git merge feature</code> — một <span class="mpanel-badge mpanel-badge-orange">merge commit M</span> được tạo ra, nối 2 nhánh lại
+    </div>
+    <div class="merge-svg-wrap">
+      <svg id="svg-after" viewBox="0 0 640 160" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="merge-legend">
+      <div class="mleg-item"><span class="mleg-dot" style="background:var(--accent-orange)"></span>M = Merge Commit: có <strong>2 parent</strong> (C3 và F2)</div>
+      <div class="mleg-item"><span class="mleg-dot" style="background:var(--accent-blue)"></span>Lịch sử main vẫn nguyên: C1→C2→C3</div>
+      <div class="mleg-item"><span class="mleg-dot" style="background:var(--accent-green)"></span>Lịch sử feature vẫn nguyên: C1→F1→F2</div>
+    </div>
+  </div>
+
+  <!-- KEY DIFFERENCE callout -->
+  <div class="merge-callout obs" id="merge-callout-before">
+    <div class="mcallout-icon">🔀</div>
+    <div>
+      <div class="mcallout-title">2 nhánh tồn tại độc lập</div>
+      <div class="mcallout-desc">Mỗi dev có thể làm việc riêng mà không ảnh hưởng nhau. Nhưng muốn kết hợp thì cần <code>git merge</code>.</div>
+    </div>
+  </div>
+  <div class="merge-callout obs" id="merge-callout-after" style="display:none;border-color:var(--accent-orange);background:rgba(245,166,35,.05);">
+    <div class="mcallout-icon">✅</div>
+    <div>
+      <div class="mcallout-title">Merge commit M có 2 "cha"</div>
+      <div class="mcallout-desc">Đây là điểm đặc biệt của merge commit — nó ghi nhớ lịch sử từ <em>cả 2 nhánh</em>. Dùng <code>git log --graph</code> để thấy hình dạng này.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SECTION 2 — REBASE (step player)
+════════════════════════════════════════ -->
+<section id="rebase">
+  <div class="section-label obs">02 — Rebase</div>
+  <h2 class="obs">Git Rebase</h2>
+  <p class="desc obs">Viết lại lịch sử: "di chuyển" các commit của nhánh feature lên đỉnh của main, tạo ra lịch sử tuyến tính.</p>
+
+  <div class="step-player obs">
+    <div class="step-header">
+      <span style="font-size:.75rem;color:var(--muted);">Rebase — từng bước</span>
+      <div class="step-dots" id="rebase-dots"></div>
+    </div>
+    <div class="step-body">
+      <div class="step-info">
+        <h3 id="rb-title"></h3>
+        <p id="rb-desc"></p>
+        <div class="code-chip" id="rb-cmd"></div>
+      </div>
+      <div class="step-graph" id="rb-graph"></div>
+    </div>
+    <div class="step-controls">
+      <button class="btn" id="rb-prev">← Trước</button>
+      <button class="btn primary" id="rb-next">Tiếp →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SECTION 3 — RESET (interactive)
+════════════════════════════════════════ -->
+<section id="reset">
+  <div class="section-label obs">03 — Reset</div>
+  <h2 class="obs">Git Reset</h2>
+  <p class="desc obs">Di chuyển con trỏ HEAD về một commit cũ hơn. Điều gì xảy ra với code của bạn phụ thuộc vào <strong>3 chế độ</strong> dưới đây.</p>
+
+  <!-- SCENARIO SETUP -->
+  <div class="git-visual obs" style="margin-bottom:1rem;">
+    <div style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1.2rem;">📌 Kịch bản: bạn có 4 commits, muốn reset về C2</div>
+    <div class="branch-row">
+      <div class="branch-label main">main</div>
+      <div class="track">
+        <div class="node blue" data-tip="C1: commit đầu tiên — ổn định, không đổi">C1</div>
+        <div class="line blue"></div>
+        <div class="node blue" data-tip="C2: commit đích — bạn muốn HEAD trỏ về đây">
+          C2
+          <span class="node-tag tag-head" style="bottom:calc(100% + 4px);">← target</span>
+        </div>
+        <div class="line" style="background:var(--border);opacity:.5;"></div>
+        <div class="node red" data-tip="C3: commit này sẽ bị 'bỏ' khỏi lịch sử">C3</div>
+        <div class="line" style="background:var(--border);opacity:.5;"></div>
+        <div class="node red" data-tip="C4: commit này cũng sẽ bị 'bỏ' khỏi lịch sử">
+          C4
+          <span class="node-tag tag-trash">HEAD</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted);">
+      Lệnh thực thi: <code style="color:var(--accent-orange);">git reset [--soft | --mixed | --hard] C2</code>
+      &nbsp;·&nbsp; C3 và C4 sẽ biến mất khỏi git log — nhưng <em>nội dung thay đổi</em> sẽ đi đâu?
+    </div>
+  </div>
+
+  <!-- MODE TABS -->
+  <div class="reset-tabs obs">
+    <button class="rtab rtab-soft active" data-mode="soft">
+      <span class="rtab-key">--soft</span>
+      <span class="rtab-sub">An toàn nhất</span>
+    </button>
+    <button class="rtab rtab-mixed" data-mode="mixed">
+      <span class="rtab-key">--mixed</span>
+      <span class="rtab-sub">Mặc định</span>
+    </button>
+    <button class="rtab rtab-hard" data-mode="hard">
+      <span class="rtab-key">--hard</span>
+      <span class="rtab-sub">⚠ Nguy hiểm</span>
+    </button>
+  </div>
+
+  <!-- MAIN VISUALIZER -->
+  <div class="reset-vis-main obs">
+
+    <!-- LEFT: timeline after reset -->
+    <div class="rviz-left">
+      <div class="rviz-label">Git Log sau reset</div>
+      <div class="rviz-timeline">
+        <div class="rvt-item">
+          <div class="rvt-dot blue"></div>
+          <div class="rvt-info"><span class="rvt-hash">a1b2c3</span> C1 — initial commit</div>
+        </div>
+        <div class="rvt-item">
+          <div class="rvt-dot blue rvt-head" id="rvt-head-dot"></div>
+          <div class="rvt-info">
+            <span class="rvt-hash">d4e5f6</span> C2 — stable feature
+            <span class="rvt-badge" id="rvt-head-badge">HEAD</span>
+          </div>
+        </div>
+        <div class="rvt-item rvt-gone" id="rvt-c3-row">
+          <div class="rvt-dot red-dim"></div>
+          <div class="rvt-info rvt-strikethrough"><span class="rvt-hash">7g8h9i</span> C3 — add login page</div>
+        </div>
+        <div class="rvt-item rvt-gone" id="rvt-c4-row">
+          <div class="rvt-dot red-dim"></div>
+          <div class="rvt-info rvt-strikethrough"><span class="rvt-hash">j1k2l3</span> C4 — fix login bug</div>
+        </div>
+      </div>
+      <div class="rviz-cmd-box" id="rviz-cmd-box">
+        <span id="rviz-cmd-text"></span>
+      </div>
+    </div>
+
+    <!-- RIGHT: 3-zone flow -->
+    <div class="rviz-right">
+      <div class="rviz-label">Nội dung thay đổi của C3 &amp; C4 đi đâu?</div>
+
+      <div class="flow-zones">
+        <!-- ZONE: Commits (repo) -->
+        <div class="fzone fzone-repo" id="fz-repo">
+          <div class="fzone-header">
+            <span class="fzone-icon">🗄️</span>
+            <span class="fzone-title">Repository</span>
+            <span class="fzone-hint">(git log)</span>
+          </div>
+          <div class="fzone-body" id="fz-repo-body">
+            <div class="fzone-file present">✓ C1, C2 còn trong lịch sử</div>
+            <div class="fzone-file gone" id="fz-repo-gone">✗ C3, C4 bị xóa khỏi lịch sử</div>
+          </div>
+        </div>
+
+        <!-- ARROW 1 -->
+        <div class="flow-arrow" id="flow-arrow-1">
+          <div class="flow-arrow-line"></div>
+          <div class="flow-arrow-label" id="fal-1"></div>
+        </div>
+
+        <!-- ZONE: Staging Area -->
+        <div class="fzone fzone-staging" id="fz-staging">
+          <div class="fzone-header">
+            <span class="fzone-icon">📋</span>
+            <span class="fzone-title">Staging Area</span>
+            <span class="fzone-hint">(git status)</span>
+          </div>
+          <div class="fzone-body" id="fz-staging-body">
+            <div class="fzone-file" id="fz-staging-file1"></div>
+            <div class="fzone-file" id="fz-staging-file2"></div>
+            <div class="fzone-empty" id="fz-staging-empty" style="display:none;">— trống —</div>
+          </div>
+        </div>
+
+        <!-- ARROW 2 -->
+        <div class="flow-arrow" id="flow-arrow-2">
+          <div class="flow-arrow-line"></div>
+          <div class="flow-arrow-label" id="fal-2"></div>
+        </div>
+
+        <!-- ZONE: Working Directory -->
+        <div class="fzone fzone-working" id="fz-working">
+          <div class="fzone-header">
+            <span class="fzone-icon">📁</span>
+            <span class="fzone-title">Working Directory</span>
+            <span class="fzone-hint">(ổ cứng của bạn)</span>
+          </div>
+          <div class="fzone-body" id="fz-working-body">
+            <div class="fzone-file" id="fz-working-file1"></div>
+            <div class="fzone-file" id="fz-working-file2"></div>
+            <div class="fzone-empty" id="fz-working-empty" style="display:none;">— đã xóa sạch! —</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OUTCOME BANNER -->
+      <div class="outcome-banner" id="outcome-banner">
+        <div class="outcome-icon" id="outcome-icon"></div>
+        <div>
+          <div class="outcome-title" id="outcome-title"></div>
+          <div class="outcome-desc" id="outcome-desc"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT STEP hint -->
+  <div class="next-step-box obs" id="next-step-box">
+    <div class="nstep-label">Bước tiếp theo thường làm:</div>
+    <div class="nstep-cmd" id="nstep-cmd"></div>
+    <div class="nstep-desc" id="nstep-desc"></div>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════════════
+     SECTION 4 — REVERT
+════════════════════════════════════════ -->
+<section id="revert">
+  <div class="section-label obs">04 — Revert</div>
+  <h2 class="obs">Git Revert</h2>
+  <p class="desc obs">Không xóa lịch sử. Tạo thêm một commit mới có nội dung <em>ngược lại</em> với commit lỗi — an toàn cho teamwork.</p>
+
+  <div class="git-visual obs">
+    <div class="branch-row">
+      <div class="branch-label main">main</div>
+      <div class="track">
+        <div class="node blue" data-tip="C1: trạng thái ban đầu, ổn định">C1</div>
+        <div class="line blue"></div>
+        <div class="node red" data-tip="C2: commit lỗi — bug đã được push lên!">
+          C2
+          <span class="node-tag tag-trash">⚠ lỗi</span>
+        </div>
+        <div class="line blue"></div>
+        <div class="node blue" data-tip="C3: công việc bình thường vẫn tiếp tục">C3</div>
+        <div class="line blue"></div>
+        <div class="node purple highlight" data-tip="Revert C2: commit mới này đảo ngược hoàn toàn thay đổi của C2">
+          R
+          <span class="node-tag tag-revert">revert C2</span>
+        </div>
+        <div class="line" style="flex:0;min-width:12px"></div>
+        <div class="node blue" data-tip="HEAD: lịch sử vẫn đầy đủ, không bị xóa commit nào cả">
+          HEAD
+          <span class="node-tag tag-head">HEAD</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;" class="obs">
+    <div style="background:var(--surface);border:1px solid #2e0b0b;border-radius:10px;padding:1.25rem;">
+      <div style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-red);margin-bottom:.5rem;">❌ Reset — nguy hiểm khi đã push</div>
+      <p style="font-size:.8rem;color:var(--muted);">Xóa commit khỏi lịch sử. Người khác đang pull sẽ bị conflict thảm họa.</p>
+    </div>
+    <div style="background:var(--surface);border:1px solid #1a1030;border-radius:10px;padding:1.25rem;">
+      <div style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-purple);margin-bottom:.5rem;">✅ Revert — an toàn cho team</div>
+      <p style="font-size:.8rem;color:var(--muted);">Thêm commit mới, lịch sử không bị thay đổi. Mọi người pull bình thường.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SECTION 5 — COMPARE
+════════════════════════════════════════ -->
+<section id="compare">
+  <div class="section-label obs">05 — So Sánh</div>
+  <h2 class="obs">Khi nào dùng lệnh nào?</h2>
+  <p class="desc obs">Chọn đúng công cụ cho đúng tình huống.</p>
+
+  <table class="cmp-table obs">
+    <thead>
+      <tr>
+        <th>Tình huống</th>
+        <th>Lệnh</th>
+        <th>Lý do</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Lỡ commit sai, <strong>chưa push</strong></td>
+        <td><span class="badge badge-green">reset --soft</span></td>
+        <td style="color:var(--muted);">Sửa lại code & commit lại gọn gàng.</td>
+      </tr>
+      <tr>
+        <td>Code lỗi đã <strong>push lên server chung</strong></td>
+        <td><span class="badge badge-blue" style="background:#1a1030;color:var(--accent-purple);">revert</span></td>
+        <td style="color:var(--muted);">Mọi người thấy lịch sử đảo ngược, không gây conflict.</td>
+      </tr>
+      <tr>
+        <td>Muốn <strong>xóa sạch</strong> thay đổi nháp</td>
+        <td><span class="badge badge-red">reset --hard</span></td>
+        <td style="color:var(--muted);">Dọn dẹp nhanh — cẩn thận, không hoàn tác được!</td>
+      </tr>
+      <tr>
+        <td>Gộp code <strong>sạch trước khi tạo PR</strong></td>
+        <td><span class="badge badge-orange">rebase</span></td>
+        <td style="color:var(--muted);">Lịch sử tuyến tính, dễ review hơn.</td>
+      </tr>
+      <tr>
+        <td>Giữ <strong>toàn bộ lịch sử</strong> khi merge nhánh</td>
+        <td><span class="badge badge-blue">merge</span></td>
+        <td style="color:var(--muted);">Tường minh, rõ khi nào nhánh được gộp.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <p>Tài liệu được minh họa bởi <span>Antigravity AI</span> · Visual Git Guide</p>
+</footer>
+
+<script>
+// ── TOOLTIP ──
+const tooltip = document.getElementById('tooltip');
+document.querySelectorAll('[data-tip]').forEach(el => {
+  el.addEventListener('mousemove', e => {
+    tooltip.textContent = el.dataset.tip;
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top  = (e.clientY - 10) + 'px';
+    tooltip.classList.add('show');
+  });
+  el.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+});
+
+// ── MERGE SVG RENDERER ──
+const BLUE   = '#4f9cf9';
+const GREEN  = '#3ecf8e';
+const ORANGE = '#f5a623';
+const MUTED  = '#2e3a4e';
+const BG     = '#111318';
+
+function svgNode(x, y, label, color, r=18, small=false) {
+  const fs = small ? 9 : 10.5;
+  return `
+    <circle cx="${x}" cy="${y}" r="${r}" fill="${color}22" stroke="${color}" stroke-width="2"/>
+    <text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central"
+      fill="${color}" font-family="JetBrains Mono,monospace" font-size="${fs}" font-weight="700">${label}</text>
+  `;
+}
+function svgLabel(x, y, text, color='#4a5568', anchor='middle') {
+  return `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="${color}"
+    font-family="JetBrains Mono,monospace" font-size="9" letter-spacing="0.05em">${text}</text>`;
+}
+function svgLine(x1,y1,x2,y2,color,dash='',w=2) {
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+    stroke="${color}" stroke-width="${w}" stroke-dasharray="${dash}" stroke-linecap="round"/>`;
+}
+function svgCurve(x1,y1,cx1,cy1,cx2,cy2,x2,y2,color,w=2) {
+  return `<path d="M${x1},${y1} C${cx1},${cy1} ${cx2},${cy2} ${x2},${y2}"
+    fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>`;
+}
+function svgArrow(x,y,color) {
+  return `<polygon points="${x},${y} ${x-4},${y-7} ${x+4},${y-7}" fill="${color}"/>`;
+}
+function svgTag(x, y, text, bg, color, border) {
+  const w = text.length * 6.2 + 12;
+  return `
+    <rect x="${x - w/2}" y="${y-10}" width="${w}" height="16" rx="4"
+      fill="${bg}" stroke="${border}" stroke-width="1"/>
+    <text x="${x}" y="${y+1}" text-anchor="middle" dominant-baseline="central"
+      fill="${color}" font-family="JetBrains Mono,monospace" font-size="8" font-weight="700">${text}</text>
+  `;
+}
+
+function drawMergeBefore() {
+  const svg = document.getElementById('svg-before');
+  if (!svg) return;
+  // Layout: y=55 = main row, y=120 = feature row
+  // x positions: C1=80, C2=200, C3=340, [feature: F1=260, F2=380]
+  const mY=55, fY=120;
+  const c1x=80, c2x=210, c3x=360;
+  const f1x=300, f2x=430;
+  let s = ``;
+
+  // Branch label backgrounds
+  s += `<rect x="0" y="${mY-12}" width="58" height="24" rx="5" fill="#0e2a4a" opacity=".7"/>`;
+  s += `<rect x="0" y="${fY-12}" width="58" height="24" rx="5" fill="#0b2e20" opacity=".7"/>`;
+  s += svgLabel(29, mY+1, 'main', BLUE);
+  s += svgLabel(29, fY+1, 'feature', GREEN);
+
+  // main line
+  s += svgLine(68, mY, c3x+18, mY, BLUE+'55');
+  // feature line: starts from C1 branch point
+  s += svgLine(c1x, mY, c1x, fY, MUTED, '5,4'); // branch-off dashed
+  s += svgLine(c1x, fY, f2x+18, fY, GREEN+'55');
+
+  // branch-off visual marker at C1
+  s += svgCurve(c1x, mY+18, c1x, mY+40, c1x, fY-20, c1x, fY-18, GREEN+'88', 1.5);
+
+  // main nodes
+  s += svgNode(c1x, mY, 'C1', BLUE);
+  s += svgNode(c2x, mY, 'C2', BLUE);
+  s += svgNode(c3x, mY, 'C3', BLUE);
+  s += svgTag(c3x, mY-32, 'HEAD → main', '#0e2a4a', BLUE, BLUE+'66');
+
+  // feature nodes
+  s += svgNode(f1x, fY, 'F1', GREEN);
+  s += svgNode(f2x, fY, 'F2', GREEN);
+  s += svgTag(f2x, fY+34, 'HEAD → feature', '#0b2e20', GREEN, GREEN+'66');
+
+  // "tách từ C1" annotation
+  s += svgLabel(c1x - 12, (mY+fY)/2 + 2, '← tách từ C1', '#2e4a3a', 'end');
+
+  // "diverged" indicator
+  s += `<line x1="${c3x+24}" y1="${mY}" x2="${c3x+50}" y2="${mY}" stroke="${MUTED}" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  s += `<line x1="${f2x+24}" y1="${fY}" x2="${f2x+50}" y2="${fY}" stroke="${MUTED}" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+
+  svg.innerHTML = s;
+}
+
+function drawMergeAfter() {
+  const svg = document.getElementById('svg-after');
+  if (!svg) return;
+  const mY=55, fY=120;
+  const c1x=60, c2x=175, c3x=300, mx=450, headX=570;
+  const f1x=220, f2x=360;
+  let s = ``;
+
+  // Branch labels
+  s += `<rect x="0" y="${mY-12}" width="58" height="24" rx="5" fill="#0e2a4a" opacity=".7"/>`;
+  s += `<rect x="0" y="${fY-12}" width="58" height="24" rx="5" fill="#0b2e20" opacity=".7"/>`;
+  s += svgLabel(29, mY+1, 'main', BLUE);
+  s += svgLabel(29, fY+1, 'feature', GREEN);
+
+  // main track line (goes all the way to M)
+  s += svgLine(68, mY, mx-18, mY, BLUE+'55');
+  // feature track line
+  s += svgLine(c1x, fY, f2x+18, fY, GREEN+'55');
+
+  // branch-off curve C1 → feature row
+  s += svgCurve(c1x, mY+18, c1x, mY+40, c1x, fY-20, c1x, fY-18, GREEN+'99', 1.5);
+
+  // merge-in curve F2 → M (feature → main)
+  s += svgCurve(f2x+18, fY, f2x+60, fY, mx-20, fY, mx, mY+18, ORANGE+'cc', 2);
+  // also C3 → M (main direct)
+  // (already covered by main track line)
+
+  // main nodes
+  s += svgNode(c1x, mY, 'C1', BLUE);
+  s += svgNode(c2x, mY, 'C2', BLUE);
+  s += svgNode(c3x, mY, 'C3', BLUE);
+
+  // MERGE node — bigger, highlighted
+  s += `<circle cx="${mx}" cy="${mY}" r="22" fill="${ORANGE}22" stroke="${ORANGE}" stroke-width="2.5"/>`;
+  s += `<circle cx="${mx}" cy="${mY}" r="26" fill="none" stroke="${ORANGE}44" stroke-width="1.5"/>`;
+  s += `<text x="${mx}" y="${mY}" text-anchor="middle" dominant-baseline="central"
+    fill="${ORANGE}" font-family="JetBrains Mono,monospace" font-size="12" font-weight="800">M</text>`;
+  s += svgTag(mx, mY-40, 'Merge Commit', '#2e1e0b', ORANGE, ORANGE+'66');
+
+  // 2-parent annotation
+  s += svgLabel(mx, mY+42, '2 parents: C3 + F2', ORANGE+'cc');
+
+  // HEAD arrow after M
+  s += svgLine(mx+22, mY, headX-18, mY, BLUE+'44', '', 1.5);
+  s += svgNode(headX, mY, 'HEAD', BLUE, 16, true);
+  s += svgTag(headX, mY-32, '→ main', '#0e2a4a', BLUE, BLUE+'55');
+
+  // feature nodes
+  s += svgNode(f1x, fY, 'F1', GREEN);
+  s += svgNode(f2x, fY, 'F2', GREEN);
+  s += svgTag(f2x, fY+34, 'feature', '#0b2e20', GREEN, GREEN+'55');
+
+  // "2 arrows into M" mini labels
+  s += svgLabel(c3x + (mx-c3x)/2, mY - 14, 'parent 1', BLUE+'99');
+  s += svgLabel(f2x + (mx-f2x)/2 - 5, (mY+fY)/2 + 8, 'parent 2', ORANGE+'99');
+
+  svg.innerHTML = s;
+}
+
+function showMerge(panel) {
+  const isBefore = panel === 'before';
+  document.getElementById('mpanel-before').style.display = isBefore ? '' : 'none';
+  document.getElementById('mpanel-after').style.display  = isBefore ? 'none' : '';
+  document.getElementById('merge-callout-before').style.display = isBefore ? '' : 'none';
+  document.getElementById('merge-callout-after').style.display  = isBefore ? 'none' : '';
+  document.getElementById('mtog-before').classList.toggle('active', isBefore);
+  document.getElementById('mtog-after').classList.toggle('active', !isBefore);
+  if (!isBefore) drawMergeAfter();
+}
+
+window.addEventListener('load', () => {
+  drawMergeBefore();
+  drawMergeAfter(); // pre-render so toggle is instant
+});
+window.addEventListener('resize', () => { drawMergeBefore(); drawMergeAfter(); });
+const rebaseSteps = [
+  {
+    title: "Trạng thái ban đầu",
+    desc: "Nhánh feature tách ra từ C2 trên main. Main đã có thêm C3.",
+    cmd: "git log --oneline --graph",
+    graph: buildGraph([
+      { label:'main',    nodes:['C1','C2','C3'], color:'blue' },
+      { label:'feature', nodes:['','','F1','F2'], color:'green', offset:1 }
+    ])
+  },
+  {
+    title: "Bắt đầu Rebase",
+    desc: "Git tìm commit chung giữa hai nhánh (base = C2), sau đó tách F1 và F2 ra.",
+    cmd: "git checkout feature && git rebase main",
+    graph: buildGraph([
+      { label:'main',    nodes:['C1','C2','C3'], color:'blue' },
+      { label:'feature', nodes:['','','','','F1-ghost','F2-ghost'], color:'ghost', offset:1 }
+    ])
+  },
+  {
+    title: "Apply F1 lên đỉnh C3",
+    desc: "F1 được \"replay\" lên sau C3 tạo ra commit mới F1' (hash khác nhưng nội dung giống).",
+    cmd: "# applying F1...",
+    graph: buildGraph([
+      { label:'main',    nodes:['C1','C2','C3','F1ʼ'], color:'blue' },
+      { label:''   ,     nodes:[], color:'blue' }
+    ])
+  },
+  {
+    title: "Apply F2 → Hoàn tất!",
+    desc: "Lịch sử giờ tuyến tính: C1→C2→C3→F1'→F2'. Không có merge commit nào cả.",
+    cmd: "# rebase complete ✓",
+    graph: buildGraph([
+      { label:'feature', nodes:['C1','C2','C3','F1ʼ','F2ʼ'], color:'green' }
+    ])
+  }
+];
+
+function buildGraph(rows) {
+  let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+  rows.forEach(row => {
+    if (!row.nodes.length) return;
+    html += `<div style="display:flex;align-items:center;gap:0;">`;
+    html += `<span style="font-size:.65rem;width:64px;text-align:right;padding-right:12px;color:var(--muted);flex-shrink:0;">${row.label}</span>`;
+    row.nodes.forEach((n,i) => {
+      if (!n) { html += `<div style="width:30px;height:30px;flex-shrink:0;opacity:0;border-radius:50%"></div>`; }
+      else {
+        const cls = n.includes('ghost') ? 'ghost' : row.color;
+        const display = n.replace('-ghost','');
+        html += `<div class="node ${cls}" style="width:30px;height:30px;font-size:.58rem;flex-shrink:0;">${display}</div>`;
+      }
+      if (i < row.nodes.length - 1 && row.nodes[i] && row.nodes[i+1]) {
+        html += `<div class="line ${row.color}" style="min-width:16px;flex:0 1 20px;"></div>`;
+      } else if (i < row.nodes.length - 1) {
+        html += `<div style="min-width:16px;flex:0 1 20px;"></div>`;
+      }
+    });
+    html += `</div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+let rbCurrent = 0;
+const dotsEl  = document.getElementById('rebase-dots');
+rebaseSteps.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className = 'step-dot' + (i===0?' active':'');
+  d.dataset.idx = i;
+  dotsEl.appendChild(d);
+});
+
+function renderRebase() {
+  const s = rebaseSteps[rbCurrent];
+  document.getElementById('rb-title').textContent = s.title;
+  document.getElementById('rb-desc').textContent  = s.desc;
+  document.getElementById('rb-cmd').textContent   = s.cmd;
+  document.getElementById('rb-graph').innerHTML   = s.graph;
+  document.querySelectorAll('.step-dot').forEach((d,i) => {
+    d.classList.toggle('active', i===rbCurrent);
+    const color = ['#4f9cf9','#3ecf8e','#f5a623','#a78bfa'][i] || '#4f9cf9';
+    d.style.background = i===rbCurrent ? color : '';
+  });
+}
+function rebaseStep(dir) {
+  rbCurrent = Math.max(0, Math.min(rebaseSteps.length-1, rbCurrent+dir));
+  renderRebase();
+}
+// ── INTERSECTION OBSERVER ──
+const resetModes = {
+  soft: {
+    cmd: 'git reset --soft C2',
+    tabCmd: 'git reset --soft HEAD~2',
+    staging: {
+      active: true,
+      files: [
+        { cls:'here', text:'+ login.js (changes from C3)' },
+        { cls:'here', text:'+ auth.test.js (changes from C4)' }
+      ]
+    },
+    working: {
+      active: false,
+      files: [
+        { cls:'here-blue', text:'login.js (saved on disk)' },
+        { cls:'here-blue', text:'auth.test.js (saved on disk)' }
+      ]
+    },
+    arrow1: { active: true,  label: 'thay đổi giữ lại →' },
+    arrow2: { active: false, label: 'không di chuyển' },
+    outcome: {
+      icon: '✅',
+      bg: 'rgba(62,207,142,.06)', border: 'var(--accent-green)',
+      title: 'Thay đổi nằm sẵn ở Staging — chỉ cần commit lại!',
+      desc: 'Dùng khi: viết sai commit message, muốn tách commit ra nhiều phần nhỏ hơn.'
+    },
+    nextCmd: 'git commit -m "fix: better message"',
+    nextDesc: 'Thay đổi đã staged sẵn, commit lại ngay là xong.'
+  },
+  mixed: {
+    cmd: 'git reset --mixed C2',
+    tabCmd: 'git reset HEAD~2  (mặc định)',
+    staging: {
+      active: false,
+      files: []
+    },
+    working: {
+      active: true,
+      files: [
+        { cls:'here-blue', text:'login.js (modified, unstaged)' },
+        { cls:'here-blue', text:'auth.test.js (modified, unstaged)' }
+      ]
+    },
+    arrow1: { active: false, label: 'staging bị xóa' },
+    arrow2: { active: true,  label: 'thay đổi xuống →' },
+    outcome: {
+      icon: '⚠️',
+      bg: 'rgba(245,166,35,.06)', border: 'var(--accent-orange)',
+      title: 'Thay đổi còn trên ổ cứng nhưng đã unstaged.',
+      desc: 'Dùng khi: muốn xem lại từng file rồi quyết định staged cái nào trước khi commit.'
+    },
+    nextCmd: 'git add -p && git commit',
+    nextDesc: 'Xem lại từng thay đổi, add có chọn lọc rồi commit.'
+  },
+  hard: {
+    cmd: 'git reset --hard C2',
+    tabCmd: 'git reset --hard HEAD~2',
+    staging: {
+      active: false,
+      files: []
+    },
+    working: {
+      active: false,
+      files: []
+    },
+    arrow1: { active: false, label: '— bị xóa —' },
+    arrow2: { active: false, label: '— bị xóa —' },
+    outcome: {
+      icon: '🔥',
+      bg: 'rgba(247,99,99,.06)', border: 'var(--accent-red)',
+      title: 'MỌI thay đổi bị xóa vĩnh viễn. Không hoàn tác được!',
+      desc: 'Dùng khi: thực sự muốn bỏ hết và làm lại từ đầu. Hoặc dùng git reflog để vớt vát.'
+    },
+    nextCmd: 'git reflog  # nếu lỡ tay',
+    nextDesc: 'Cách duy nhất phục hồi: tìm hash cũ trong reflog rồi checkout.'
+  }
+};
+
+function setReset(mode) {
+  // update tabs
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.rtab-' + mode).classList.add('active');
+
+  const m = resetModes[mode];
+
+  // update cmd box
+  document.getElementById('rviz-cmd-box').textContent = m.tabCmd;
+  const cmdColors = { soft: 'var(--accent-green)', mixed: 'var(--accent-orange)', hard: 'var(--accent-red)' };
+  document.getElementById('rviz-cmd-box').style.color = cmdColors[mode];
+
+  // staging zone
+  const fzStaging = document.getElementById('fz-staging');
+  const stagingF1 = document.getElementById('fz-staging-file1');
+  const stagingF2 = document.getElementById('fz-staging-file2');
+  const stagingEmpty = document.getElementById('fz-staging-empty');
+  if (m.staging.active) {
+    fzStaging.className = 'fzone fzone-staging fzone-active-orange';
+    stagingF1.className = 'fzone-file ' + (m.staging.files[0]?.cls || '');
+    stagingF1.textContent = m.staging.files[0]?.text || '';
+    stagingF2.className = 'fzone-file ' + (m.staging.files[1]?.cls || '');
+    stagingF2.textContent = m.staging.files[1]?.text || '';
+    stagingF1.style.display = ''; stagingF2.style.display = '';
+    stagingEmpty.style.display = 'none';
+  } else {
+    fzStaging.className = 'fzone fzone-staging fzone-dim';
+    stagingF1.style.display = 'none'; stagingF2.style.display = 'none';
+    stagingEmpty.style.display = '';
+  }
+
+  // working zone
+  const fzWorking = document.getElementById('fz-working');
+  const workingF1 = document.getElementById('fz-working-file1');
+  const workingF2 = document.getElementById('fz-working-file2');
+  const workingEmpty = document.getElementById('fz-working-empty');
+  if (m.working.active) {
+    fzWorking.className = 'fzone fzone-working fzone-active-blue';
+    workingF1.className = 'fzone-file ' + (m.working.files[0]?.cls || '');
+    workingF1.textContent = m.working.files[0]?.text || '';
+    workingF2.className = 'fzone-file ' + (m.working.files[1]?.cls || '');
+    workingF2.textContent = m.working.files[1]?.text || '';
+    workingF1.style.display = ''; workingF2.style.display = '';
+    workingEmpty.style.display = 'none';
+  } else {
+    fzWorking.className = 'fzone fzone-working fzone-dim';
+    workingF1.style.display = 'none'; workingF2.style.display = 'none';
+    workingEmpty.style.display = '';
+  }
+
+  // arrows
+  const a1 = document.getElementById('flow-arrow-1');
+  const a2 = document.getElementById('flow-arrow-2');
+  document.getElementById('fal-1').textContent = m.arrow1.label;
+  document.getElementById('fal-2').textContent = m.arrow2.label;
+  a1.className = 'flow-arrow' + (m.arrow1.active ? ' arrow-active' : ' arrow-skip');
+  a2.className = 'flow-arrow' + (m.arrow2.active ? ' arrow-active' : ' arrow-skip');
+
+  // outcome
+  const ob = document.getElementById('outcome-banner');
+  ob.style.background = m.outcome.bg;
+  ob.style.borderColor = m.outcome.border;
+  document.getElementById('outcome-icon').textContent = m.outcome.icon;
+  document.getElementById('outcome-title').textContent = m.outcome.title;
+  document.getElementById('outcome-desc').textContent  = m.outcome.desc;
+
+  // next step
+  const nc = document.getElementById('nstep-cmd');
+  nc.textContent = m.nextCmd;
+  nc.style.color = cmdColors[mode];
+  document.getElementById('nstep-desc').textContent = m.nextDesc;
+}
+
+// ── WIRE ALL EVENT LISTENERS ──
+document.addEventListener('DOMContentLoaded', () => {
+
+  // Nav scroll buttons
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Highlight active nav on scroll
+  const sections = ['merge','rebase','reset','revert','compare'].map(id => document.getElementById(id));
+  const navBtns = document.querySelectorAll('.nav-btn');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navBtns.forEach(b => b.classList.toggle('active', b.dataset.target === entry.target.id));
+      }
+    });
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  sections.forEach(s => s && observer.observe(s));
+
+  // Merge toggle
+  document.getElementById('mtog-before').addEventListener('click', () => showMerge('before'));
+  document.getElementById('mtog-after').addEventListener('click',  () => showMerge('after'));
+
+  // Rebase step buttons
+  document.getElementById('rb-prev').addEventListener('click', () => rebaseStep(-1));
+  document.getElementById('rb-next').addEventListener('click', () => rebaseStep(1));
+
+  // Rebase dots (built dynamically, use delegation)
+  document.getElementById('rebase-dots').addEventListener('click', e => {
+    const dot = e.target.closest('.step-dot');
+    if (dot) { rbCurrent = parseInt(dot.dataset.idx); renderRebase(); }
+  });
+
+  // Reset tabs
+  document.querySelectorAll('.rtab').forEach(btn => {
+    btn.addEventListener('click', () => setReset(btn.dataset.mode));
+  });
+
+  // Draw initial SVGs
+  drawMergeBefore();
+  drawMergeAfter();
+  renderRebase();
+  setReset('soft');
+});
+
+window.addEventListener('resize', () => { drawMergeBefore(); drawMergeAfter(); });
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.obs').forEach(el => io.observe(el));
+
+
+</script>
+</body>
+</html>
